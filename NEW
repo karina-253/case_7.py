@@ -1,0 +1,31 @@
+# Получение последней страницы поиска
+def get_last_page(search_query):
+    url = f'https://obuv-tut2000.ru/magazin/search?gr_smart_search=1&search_text={search_query}'
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "lxml")
+    last_page_tag = soup.find("li", class_="page-num page_last")
+    return int(last_page_tag.text) if last_page_tag else 1
+
+# Генерирует URL товаров с учетом постраничной навигации
+def generate_product_urls(search_query):
+    total_pages = get_last_page(search_query)
+
+    # Обрабатываем первую страницу (без параметра p=)
+    url = f'https://obuv-tut2000.ru/magazin/search?gr_smart_search=1&search_text={search_query}'
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "lxml")
+    items = soup.find_all("div", class_="product-item__top")
+
+    for item in items:
+        href = item.find("a").get("href")
+        yield "https://obuv-tut2000.ru" + href
+
+    # Обрабатываем остальные страницы (с параметром p=)
+    for page in range(1, total_pages + 1):
+        url = f'https://obuv-tut2000.ru/magazin/search?p={page}&gr_smart_search=1&search_text={search_query}'
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "lxml")
+        items = soup.find_all("div", class_="product-item__top")
+        for item in items:
+            href = item.find("a").get("href")
+            yield "https://obuv-tut2000.ru" + href
